@@ -15,6 +15,7 @@ variable access_groups {
                     resources = object({
                         resource_group       = optional(string) # Name of the resource group the policy will apply to
                         resource_type        = optional(string) # Name of the resource type for the policy ex. "resource-group"
+                        resource             = optional(string) # The resource of the policy definition
                         service              = optional(string) # Name of the service type for the policy ex. "cloud-object-storage"
                         resource_instance_id = optional(string) # ID of a service instance to give permissions
                     })
@@ -35,7 +36,7 @@ variable access_groups {
                 )
             )
             account_management_policies = optional(list(string))
-            invite_users                = list(string) # Users to invite to the access group
+            invite_users                = optional(list(string)) # Users to invite to the access group
         })
     )
     default     = [

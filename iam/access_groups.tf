@@ -64,7 +64,7 @@ locals {
                 # For each policy
                 for policy in group.policies:
                 # if the policy contains a resource group return it
-                policy.resources.resource_group if contains(keys(policy.resources), "resource_group")
+                policy.resources.resource_group if contains(keys(policy.resources), "resource_group") && policy.resources.resource != null
             ]
         ])
     )
@@ -111,11 +111,11 @@ resource ibm_iam_access_group_policy policies {
     roles           = each.value.roles
     resources {
         # Resources are made variable so that each policy can be specific without needing to use multiple blocks
-        resource_group_id    = contains(keys(each.value.resources), "resource_group") ? data.ibm_resource_group.resource_group[each.value.resources.resource_group].id : null
-        resource_type        = contains(keys(each.value.resources), "resource_type") ? each.value.resources.resource_type : null
-        service              = contains(keys(each.value.resources), "service") ? each.value.resources.service : null
-        resource_instance_id = contains(keys(each.value.resources), "resource_instance_id") ? each.value.resources.resource_instance_id : null
-        attributes           = contains(keys(each.value.resources), "attributes") ? each.value.resources.attributes : null
+        resource_group_id    = each.value.resources.resource_group != null ? data.ibm_resource_group.resource_group[each.value.resources.resource_group].id : null
+        resource_type        = each.value.resources.resource_type
+        service              = each.value.resources.service
+        resource_instance_id = each.value.resources.resource_instance_id
+        resource             = each.value.resources.resource
     }
 }
 
