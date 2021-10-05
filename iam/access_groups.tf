@@ -47,13 +47,13 @@ locals {
 
 
     # Account management list
-    account_management_list = [
+    account_management_list = {
         for group in var.access_groups:
-        {
+        group.name => {
             group = group.name
             roles = group.account_management_policies
         } if group.account_management_policies != null
-    ]
+    }
 
 
     # Get a list of all resource groups from access groups
@@ -61,10 +61,18 @@ locals {
         flatten([ 
             # For each group
             for group in var.access_groups: [
-                # For each policy
-                for policy in group.policies:
-                # if the policy contains a resource group return it
-                policy.resources.resource_group if contains(keys(policy.resources), "resource_group")
+                [
+                    # For each policy
+                    for policy in group.policies:
+                    # if the policy contains a resource group return it                
+                    policy.resources.resource_group if policy.resources.resource_group != null
+                ],
+                [
+                    # For each policy
+                    for policy in group.policies:
+                    # if the policy contains a resource group return it                
+                    policy.resources.resource if policy.resources.resource_type == "resource_group"
+                ]
             ]
         ])
     )
@@ -111,31 +119,11 @@ resource ibm_iam_access_group_policy policies {
     roles           = each.value.roles
     resources {
         # Resources are made variable so that each policy can be specific without needing to use multiple blocks
-        resource_group_id    = contains(keys(each.value.resources), "resource_group") ? data.ibm_resource_group.resource_group[each.value.resources.resource_group].id : null
-        resource_type        = contains(keys(each.value.resources), "resource_type") ? each.value.resources.resource_type : null
-        service              = contains(keys(each.value.resources), "service") ? each.value.resources.service : null
-        resource_instance_id = contains(keys(each.value.resources), "resource_instance_id") ? each.value.resources.resource_instance_id : null
-        attributes           = contains(keys(each.value.resources), "attributes") ? each.value.resources.attributes : null
-    }
-}
-
-##############################################################################
-
-
-##############################################################################
-# Create Dynamic Access Group Rules
-##############################################################################
-
-resource ibm_iam_access_group_dynamic_rule dynamic_rules {
-    for_each          = local.dynamic_rules
-    name              = each.value.name
-    access_group_id = ibm_iam_access_group.groups[each.value.group].id
-    expiration        = each.value.expiration
-    identity_provider = each.value.identity_provider
-    conditions {
-      claim    = each.value.conditions.claim   
-      operator = each.value.conditions.operator
-      value    = each.value.conditions.value   
+        resource_group_id    = each.value.resources.resource_group != null ? data.ibm_resource_group.resource_group[each.value.resources.resource_group].id : null
+        resource_type        = each.value.resources.resource_type
+        service              = each.value.resources.service
+        resource_instance_id = each.value.resources.resource_instance_id
+        resource             = each.value.resources.resource_type == "resource-group" ? data.ibm_resource_group.resource_group[each.value.resources.resource].id : each.value.resources.resource
     }
 }
 
@@ -148,11 +136,11 @@ resource ibm_iam_access_group_dynamic_rule dynamic_rules {
 #   resources will continue to work
 ##############################################################################
 
-// resource ibm_iam_access_group_policy account_management_policies {
-//     for_each           = var.account_management_policies
-//     access_group_id    = ibm_iam_access_group.groups[each.key].id
-//     account_management = true
-//     roles              = each.value
-// }
+resource ibm_iam_access_group_policy account_management_policies {
+    for_each           = local.account_management_list
+    access_group_id    = ibm_iam_access_group.groups[each.key].id
+    account_management = true
+    roles              = each.value.roles
+}
 
 ##############################################################################
