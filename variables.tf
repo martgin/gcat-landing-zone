@@ -101,7 +101,7 @@ variable access_groups {
                 }
             ]
             dynamic_policies = []
-            invite_users = [ "test@test.test" ]
+            invite_users = [ "gosselin@ca.ibm.com" ]
         },
         {
           name        = "dev"
@@ -116,7 +116,7 @@ variable access_groups {
               roles = ["Viewer"] 
             }
           ]
-          invite_users = ["test@test.test"]
+          invite_users = ["bruno.moses@ibm.com"]
         }
     ]
 }
